@@ -39,3 +39,4 @@
 | `/api/users/`            | GET    | List all users        | Admin         |
 | `/api/users/<id>/`       | GET    | Retrieve user details | Admin         |
 
+

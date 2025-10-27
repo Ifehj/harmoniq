@@ -55,7 +55,7 @@ class RegisterView(generics.CreateAPIView):
 	"""View to Register a new user"""
 	queryset = CustomUser.objects.all()
 	serializer_class = RegisterSerializer
-	permission_classes = [permissions.AllowAny, IsArtist]
+	permission_classes = [permissions.AllowAny]
 
 	def create(self, request, *args, **kwargs):
 		serializer = self.get_serializer(data=request.data)
@@ -73,7 +73,7 @@ class LoginView(APIView):
 	permission_classes = [permissions.AllowAny]
 
 	def post(self, request, *args, **kwargs):
-		serializer = self.get_serializer(data=request.data)
+		serializer = LoginSerializer(data=request.data)
 		serializer.is_valid(raise_exception=True)
 		user = serializer.validated_data['user']
 		token, created = Token.objects.get_or_create(user=user)
@@ -151,7 +151,7 @@ class SongUploadView(generics.CreateAPIView):
 	"""View to upload a new song file"""
 	queryset = Song.objects.all()
 	serializer_class = SongSerializer
-	permission_classes = [permissions.IsAuthenticated]
+	permission_classes = [permissions.IsAuthenticated, IsArtist]
 
 	def perform_create(self, serializer):
 		serializer.save(uploaded_by=self.request.user)
