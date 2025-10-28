@@ -40,6 +40,9 @@ class PlaylistListCreateView(generics.ListCreateAPIView):
 	queryset = Playlist.objects.all()
 	serializer_class = PlaylistSerializer
 
+	def perform_create(self, serializer):
+		serializer.save(owner=self.request.user)
+
 class PlaylistDetailView(generics.RetrieveUpdateDestroyAPIView):
 	"""View to retrieve a playlist by ID"""
 	queryset = Playlist.objects.all()
@@ -96,10 +99,10 @@ class LikeSongView(APIView):
 		user = request.user
 		song = get_object_or_404(Song, pk=pk)
 
-		if Likes.objects.filter(user=user, song=song).exists():
+		if Likes.objects.filter(user_id=user, song_id=song).exists():
 			return Response({"detail": "You have already liked this song."}, status=status.HTTP_400_BAD_REQUEST)
 		
-		Likes.objects.create(user=user, song=song)
+		Likes.objects.create(user_id=user, song_id=song)
 		return Response({"message": "Song liked successfully."}, status=status.HTTP_201_CREATED)
 
 class UnlikeSongView(APIView):
@@ -108,7 +111,7 @@ class UnlikeSongView(APIView):
 		user = request.user
 		song = get_object_or_404(Song, pk=pk)
 
-		like = Likes.objects.filter(user=user, song=song).first()
+		like = Likes.objects.filter(user_id=user, song_id=song).first()
 		if not like:
 			return Response({"detail": "You have not liked this song."}, status=status.HTTP_400_BAD_REQUEST)
 		
@@ -118,32 +121,38 @@ class UnlikeSongView(APIView):
 class PlaylistAddSongView(APIView):
 	"""View to add a song to a playlist"""
 
-	def post(self, request, pk):
+	def post(self, request, playlist_id, song_id):
 		user = request.user
-		song = get_object_or_404(Song, pk=pk)
+		playlist = get_object_or_404(Playlist, id=playlist_id, owner=user)
+		song = get_object_or_404(Song, id=song_id)
 
-		if Playlist.objects.filter(user=user, song=song).exists():
+		if Playlist.objects.filter(owner=user, songs=song).exists():
 			return Response({"Message": "Song is already in playlist"}, status=status.HTTP_400_BAD_REQUEST)
 
-		playlist_entry = Playlist.object.create(user=user, song=song)
+		playlist.songs.add(song)
+		playlist.save()
 
-		return Response({
-			"Message": "Song added to playlist",
-			"playlist_entry_id": playlist_entry.id
-			}, status=status.HTTP_201_CREATED)
+		return Response(
+            {"message": f"'{song.title}' added to playlist '{playlist.name}'"},
+            status=status.HTTP_201_CREATED
+        )
 	
 class PlaylistRemoveSongView(APIView):
 	"""View to remove a song from a playlist"""
 
-	def post(self, request, pk):
+	def post(self, request, playlist_id, song_id):
 		user = request.user
-		song = get_object_or_404(Song, pk=pk)
+		playlist = get_object_or_404(Playlist, id=playlist_id, owner=user)
+		song = get_object_or_404(Song, id=song_id)
 
-		playlist_entry = Playlist.objects.filter(user=user, song=song).first()
-		if not playlist_entry:
-			return Response({"Message": "Song not found in playlist"}, status=status.HTTP_400_BAD_REQUEST)
-
-		playlist_entry.delete()
+		
+		if not playlist.songs.filter(id=song_id).exists():
+			return Response(
+                {"message": f"'{song.title}' not found in playlist '{playlist.name}'"},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+		playlist.songs.remove(song)
+		playlist.save()
 
 		return Response({"Message": "Song removed from playlist"}, status=status.HTTP_200_OK)
 
@@ -154,7 +163,7 @@ class SongUploadView(generics.CreateAPIView):
 	permission_classes = [permissions.IsAuthenticated, IsArtist]
 
 	def perform_create(self, serializer):
-		serializer.save(uploaded_by=self.request.user)
+		serializer.save(artist=self.request.user)
 
 class PublicPlaylistView(generics.ListAPIView):
 	"""View to get public playlists"""

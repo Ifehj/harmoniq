@@ -13,8 +13,8 @@ urlpatterns = [
 	# Playlists
 	path('playlist/list-create/', PlaylistListCreateView.as_view(), name='playlist'),
 	path('playlist/<int:pk>', PlaylistDetailView.as_view(), name='playlist-detail'),
-	path('playlist/<int:pk>/add-song/', PlaylistAddSongView.as_view(), name='playlist-add-song'),
-	path('playlist/<int:pk>/remove-song/', PlaylistRemoveSongView.as_view(), name='playlist-remove-song'),
+	path('playlist/<int:playlist_id>/add-song/<int:song_id>/', PlaylistAddSongView.as_view(), name='playlist-add-song'),
+	path('playlist/<int:playlist_id>/remove-song/<int:song_id>/', PlaylistRemoveSongView.as_view(), name='playlist-remove-song'),
 	path('public-playlists/', PublicPlaylistView.as_view(), name='public-playlists'),
 
 	# Likes
